@@ -5,10 +5,9 @@ module ImageCollector
 
     def initialize
       @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
-      @worksheet = Session.spreadsheet_by_url("https://docs.google.com/a/searchinfluence.com/spreadsheets/d/1Xo98mtLrWfy4fpL3-60lOLKX7wmxRK92o14cE8hAEZQ/edit#gid=0").worksheets[0]
     end 
 
-    def pullpage(url)
+    def pullimages(url)
         html = @agent.get(url).body
         page = Nokogiri::HTML(html)
         page_images=[]
@@ -19,20 +18,30 @@ module ImageCollector
           absolute_uri = URI.join(root_url, path).to_s
           page_images.push(absolute_uri)
         end
-        return ImageWriter.new.image_loop(page_images)
+        return page_images
       rescue Mechanize::ResponseCodeError => e  
         page_images="error"
         return page
       end   
 
+      def worksheet
+        @worksheet
+      end
+
     end
 
 
 
-  class ImageWriter < ImageScraper
+  class ImageWriter 
 
-    def next_index
-      @worksheet.num_rows + 1
+    def initialize(spreadsheet)
+      @worksheet = Session.spreadsheet_by_url(spreadsheet).worksheets[0]
+    end
+
+    def image_loop(images)
+      images.each do |img|
+        save_img(img)
+      end 
     end
 
     def save_img(img)
@@ -41,10 +50,8 @@ module ImageCollector
       @worksheet.synchronize
     end
 
-    def image_loop(images)
-      images.each do |x|
-        save_img(x)
-      end 
+    def next_index
+      @worksheet.num_rows + 1
     end
 
   end
