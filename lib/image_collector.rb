@@ -1,5 +1,17 @@
 module ImageCollector
 
+  class Collector
+
+    def initialize(url,spreadsheet)
+      @url=url
+      scraper=ImageScraper.new
+      page_elements=scraper.pullimages(url)
+      image_writer=ImageWriter.new(spreadsheet,url)
+      image_writer.image_loop(page_elements)
+    end
+
+  end
+
 
   class ImageScraper
 
@@ -7,22 +19,28 @@ module ImageCollector
       @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
     end 
 
-    def pullimages(url)
-        html = @agent.get(url).body
+    def pullimages(page_url)
+        html = @agent.get(page_url).body
         page = Nokogiri::HTML(html)
         page_images=[]
-        root_url=url.split('/')
-        root_url=root_url[0]+'//'+root_url[1]+root_url[2]
         page.css('img').each do |image|
-          path=image['src']
-          absolute_uri = URI.join(root_url, path).to_s
-          page_images.push(absolute_uri)
+          relative_image_path=image['src']
+          absolute_image_url = compile_image_url(page_url, relative_image_path)
+          page_images.push(absolute_image_url)
         end
         return page_images
       rescue Mechanize::ResponseCodeError => e  
         page_images="error"
         return page
-      end   
+      end
+
+    def compile_image_url(page_url, relative_image_path)
+      split_url=page_url.split('/')
+      root_url=split_url[0]+'//'+split_url[1]+split_url[2]
+      absolute_image_url=URI.join(root_url, relative_image_path).to_s
+      return absolute_image_url
+    end
+
 
       def worksheet
         @worksheet
@@ -34,24 +52,25 @@ module ImageCollector
 
   class ImageWriter 
 
-    def initialize(spreadsheet)
+    def initialize(spreadsheet,url)
+      @url=url
       @worksheet = Session.spreadsheet_by_url(spreadsheet).worksheets[0]
+      @rows=@worksheet.rows.count
     end
 
     def image_loop(images)
+      count=0
+      row=@rows+1
       images.each do |img|
-        save_img(img)
-      end 
-    end
-
-    def save_img(img)
-      @worksheet.reload
-      @worksheet[next_index, 2] = img
-      @worksheet.synchronize
-    end
-
-    def next_index
-      @worksheet.num_rows + 1
+        count+=1
+        row+=1
+        @worksheet.reload
+        if count==1
+          @worksheet[row,1]=@url
+        end
+        @worksheet[row, 2] = img
+        @worksheet.synchronize
+      end
     end
 
   end
