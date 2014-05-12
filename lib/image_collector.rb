@@ -13,6 +13,7 @@ module ImageCollector
   end
 
 
+
   class ImageScraper
 
     def initialize
@@ -23,7 +24,8 @@ module ImageCollector
         html = @agent.get(page_url).body
         page = Nokogiri::HTML(html)
         page_images=[]
-        page.css("#{selectors} img").each do |image|
+        selectors=parse_selectors(selectors)
+        page.css("#{selectors}").each do |image|
           relative_image_path=image['src']
           absolute_image_url = compile_image_url(page_url, relative_image_path)
           page_images.push(absolute_image_url)
@@ -34,6 +36,16 @@ module ImageCollector
         return page
       end
 
+    def parse_selectors(selectors)
+      if selectors==""
+        return 'img'
+      elsif selectors=~/,/
+        return selectors.split(',').map{ |s| "#{s} img" }.join(',')
+      else
+        return selectors+" img"
+      end
+    end
+
     def compile_image_url(page_url, relative_image_path)
       split_url=page_url.split('/')
       root_url=split_url[0]+'//'+split_url[1]+split_url[2]
@@ -41,12 +53,11 @@ module ImageCollector
       return absolute_image_url
     end
 
-
-      def worksheet
-        @worksheet
-      end
-
+    def worksheet
+      @worksheet
     end
+
+  end
 
 
 
