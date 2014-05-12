@@ -2,10 +2,10 @@ module ImageCollector
 
   class Collector
 
-    def initialize(url,spreadsheet)
+    def initialize(url,spreadsheet,selectors)
       @url=url
       scraper=ImageScraper.new
-      page_elements=scraper.pullimages(url)
+      page_elements=scraper.pullimages(url,selectors)
       image_writer=ImageWriter.new(spreadsheet,url)
       image_writer.image_loop(page_elements)
     end
@@ -19,11 +19,11 @@ module ImageCollector
       @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
     end 
 
-    def pullimages(page_url)
+    def pullimages(page_url,selectors)
         html = @agent.get(page_url).body
         page = Nokogiri::HTML(html)
         page_images=[]
-        page.css('img').each do |image|
+        page.css("#{selectors} img").each do |image|
           relative_image_path=image['src']
           absolute_image_url = compile_image_url(page_url, relative_image_path)
           page_images.push(absolute_image_url)

@@ -21,11 +21,12 @@ end
 
 
 post '/output' do
-  input=params[:URL1]
+  input=params[:urls]
   urls=input.split(" ")
+  selectors=params[:selectors]
   spreadsheet=params[:spreadsheet]
   urls.each do |url|
-    ImageCollector::Collector.new(url,spreadsheet)
+    ImageCollector::Collector.new(url,spreadsheet,selectors)
   end
-  #{}"Image sources for the requested URLs are available in <a href='#{spreadsheet}' target='_blank'>this Google spreadsheet</a>."
+  "Image sources for the requested URLs are available in <a href='#{spreadsheet}' target='_blank'>this Google spreadsheet</a>."
 end
