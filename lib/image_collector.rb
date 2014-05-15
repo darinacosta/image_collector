@@ -1,14 +1,16 @@
+require "mechanize"
+
 module ImageCollector
 
   class Collector
     def initialize(url, spreadsheet, selectors)
       @url = url
       scraper = ImageScraper.new
-      page_elements = scraper.pullimages(url,selectors)
+      page_elements = scraper.pull_images(url,selectors)
       image_writer = ImageWriter.new(spreadsheet,url)
       image_writer.image_loop(page_elements)
     end
-  end
+  end       
 
 
   class ImageScraper
@@ -16,7 +18,7 @@ module ImageCollector
       @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
     end 
 
-    def pullimages(page_url,selectors)
+    def pull_images(page_url,selectors="")
         html = @agent.get(page_url).body
         page = Nokogiri::HTML(html)
         page_images = []
@@ -28,16 +30,13 @@ module ImageCollector
         end
         puts page_images.count.to_s + " images found."
         return page_images
-      rescue Mechanize::ResponseCodeError => e  
-        page_images = "error"
-        return page
       end
 
     def parse_selectors(selectors)
       if selectors == ""
         return "img"
       elsif selectors =~ /,/
-        return selectors.split(',').map{ |s| "#{s} img" }.join(',')
+        return selectors.split(',').map { |s| "#{s} img" }.join(',')
       else
         return "#{selectors} img"
       end
@@ -79,3 +78,4 @@ module ImageCollector
   end
 
 end
+
