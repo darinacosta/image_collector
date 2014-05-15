@@ -18,7 +18,7 @@ module ImageCollector
       @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
     end 
 
-    def pull_images(page_url,selectors="")
+    def pull_images(page_url, selectors = "")
         html = @agent.get(page_url).body
         page = Nokogiri::HTML(html)
         page_images = []
@@ -70,7 +70,7 @@ module ImageCollector
         count += 1
         row += 1
         @worksheet.reload
-        @worksheet[row,1] = @url if count == 1
+        @worksheet[row, 1] = @url if count == 1
         @worksheet[row, 2] = img
         @worksheet.synchronize
       end
