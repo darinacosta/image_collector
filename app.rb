@@ -14,6 +14,17 @@ Session = GoogleDrive.login(ENV['GOOGLE_USER'], ENV['GOOGLE_PASS'])
 
 require_relative "lib/image_collector.rb"
 
+#global methods
+def get_page(page_url)
+  @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
+  #set the user agent to a variable
+  @page_url=page_url
+  html = agent.get(page_url).body
+  page = Nokogiri::HTML(html)
+  return page
+end
+
+
 #paths
 get '/' do
   erb :form
