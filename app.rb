@@ -1,7 +1,7 @@
 require 'sinatra'
 require "google_drive"
 require "mechanize"
-require 'uri'
+require "uri"
 
 configure :development do
   require 'pp'
@@ -27,7 +27,9 @@ post '/output' do
   spreadsheet = params[:spreadsheet]
   urls.each do |url|
     puts "Checking #{url} for image(s)."
-    ImageCollector::Collector.new(url,spreadsheet,selectors)
+    ImageCollector.collect(url,spreadsheet,selectors)
   end
   "Image sources for the requested URLs are available in <a href='#{spreadsheet}' target='_blank'>this Google spreadsheet</a>."
 end
+
+

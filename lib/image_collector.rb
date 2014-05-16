@@ -1,44 +1,46 @@
+require 'sinatra'
+require "google_drive"
 require "mechanize"
+require "uri"
+
 
 module ImageCollector
-
-  class Collector
-    def initialize(url, spreadsheet, selectors)
-      @url = url
-      scraper = ImageScraper.new
-      page_elements = scraper.pull_images(url,selectors)
-      image_writer = ImageWriter.new(spreadsheet,url)
-      image_writer.image_loop(page_elements)
-    end
-  end       
-
-
+  def self.collect(page_url, spreadsheet, image_selector)
+    image_scraper = ImageScraper.new(page_url, image_selector)
+    image_urls = image_scraper.pull_image_urls
+    image_writer = SpreadsheetWriter.new(spreadsheet, page_url)
+    image_writer.write_to_spreadsheet(image_urls)
+  end
+      
+      
   class ImageScraper
-    def initialize
-      @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
-    end 
+    attr_reader :page_url, :page, :image_selector
 
-    def pull_images(page_url, selectors = "")
-        html = @agent.get(page_url).body
-        page = Nokogiri::HTML(html)
-        page_images = []
-        selectors = parse_selectors(selectors)
-        page.css("#{selectors}").each do |image|
-          relative_image_path = image['src']
-          absolute_image_url = compile_image_url(page_url, relative_image_path)
-          page_images.push(absolute_image_url)
-        end
-        puts page_images.count.to_s + " images found."
-        return page_images
+    def initialize(page_url, image_selector = "")
+      @page_url = page_url
+      @page = Page.new(page_url).return_page
+      @image_selector = image_selector
+    end
+
+    def pull_image_urls
+      image_urls = []
+      image_selector = parse_image_selector(image_selector)
+      page.css("#{image_selector}").each do |image|
+        relative_image_path = image['src']
+        absolute_image_url = compile_image_url(page_url, relative_image_path)
+        image_urls.push(absolute_image_url)
       end
+      puts image_urls.count.to_s + " images found."
+      return image_urls
+    end
 
-    def parse_selectors(selectors)
-      if selectors == ""
+    def parse_image_selector(image_selector)
+      if image_selector == ""
         return "img"
-      elsif selectors =~ /,/
-        return selectors.split(',').map { |s| "#{s} img" }.join(',')
+      elsif image_selector =~ /,/
+        return image_selector.split(',').map { |s| "#{s} img" }.join(',')
       else
-        return "#{selectors} img"
+        return "#{image_selector} img"
       end
     end
 
@@ -56,22 +58,39 @@ module ImageCollector
   end
 
 
-  class ImageWriter 
-    def initialize(spreadsheet,url)
+  class Page #move this out of the Image class, global level helper method (some new module)? Also, handle all the 404s etc
+    attr_reader :agent, :page_url
+
+    def initialize(page_url)
+      @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari" }
+      #set the user agent to a variable
+      @page_url=page_url
+    end 
+
+    def return_page
+      html = agent.get(page_url).body
+      page = Nokogiri::HTML(html)
+      return page
+    end
+  end
+
+
+  class SpreadsheetWriter 
+    def initialize(spreadsheet,url="")
       @url = url
       @worksheet = Session.spreadsheet_by_url(spreadsheet).worksheets[0]
       @rows = @worksheet.rows.count
     end
 
-    def image_loop(images)
+    def write_to_spreadsheet(array)
       count = 0
       row = @rows + 1
-      images.each do |img|
+      array.each do |item|
         count += 1
         row += 1
         @worksheet.reload
         @worksheet[row, 1] = @url if count == 1
-        @worksheet[row, 2] = img
+        @worksheet[row, 2] = item
         @worksheet.synchronize
       end
     end
