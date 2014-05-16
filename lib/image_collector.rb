@@ -76,7 +76,7 @@ module ImageCollector
         count += 1
         row += 1
         worksheet.reload
-        worksheet[row, 1] = @url if count == 1
+        worksheet[row, 1] = url if count == 1
         worksheet[row, 2] = item
         worksheet.synchronize
       end

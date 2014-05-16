@@ -10,9 +10,10 @@ configure :development do
   Dotenv.load
 end
 
+require_relative "lib/image_collector.rb"
+
 Session = GoogleDrive.login(ENV['GOOGLE_USER'], ENV['GOOGLE_PASS'])
 
-require_relative "lib/image_collector.rb"
 
 #global methods
 def get_page(page_url)
